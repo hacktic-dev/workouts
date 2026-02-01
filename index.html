@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lifting Log</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 16px; }
+    input, select { font-size: 16px; padding: 10px; width: 100%; margin: 8px 0; }
+    .row { padding: 10px 0; border-bottom: 1px solid #ddd; }
+    .muted { color: #666; font-size: 14px; }
+    .big { font-size: 18px; }
+    .pill { display:inline-block; padding:2px 8px; border:1px solid #ccc; border-radius:999px; font-size:12px; margin-left:6px; }
+  </style>
+</head>
+<body>
+  <h2 style="margin: 0 0 8px 0;">Lifting Log</h2>
+  <div class="muted">Loads <code>logs.csv</code> from this site. Your CSV headers must match your Excel export.</div>
+
+  <input id="q" placeholder="Search exercise (e.g. bench, squat, OHP)..." autocomplete="off" />
+  <select id="exerciseSelect"><option value="">Choose an exercise…</option></select>
+
+  <div id="summary" style="margin: 12px 0;"></div>
+  <div id="results"></div>
+
+  <script>
+    function parseCSV(text) {
+      const rows = [];
+      let row = [], field = "", inQuotes = false;
+      for (let i = 0; i < text.length; i++) {
+        const c = text[i], n = text[i + 1];
+        if (c === '"') {
+          if (inQuotes && n === '"') { field += '"'; i++; }
+          else { inQuotes = !inQuotes; }
+        } else if (c === ',' && !inQuotes) {
+          row.push(field); field = "";
+        } else if ((c === '\n' || c === '\r') && !inQuotes) {
+          if (c === '\r' && n === '\n') i++;
+          row.push(field); field = "";
+          if (row.some(x => x.length)) rows.push(row);
+          row = [];
+        } else {
+          field += c;
+        }
+      }
+      row.push(field);
+      if (row.some(x => x.length)) rows.push(row);
+      return rows;
+    }
+
+    const norm = (s) => (s ?? "").toString().trim();
+    const normKey = (s) => norm(s).toLowerCase();
+
+    // Turn lots of common Excel-style date strings into YYYY-MM-DD for reliable sorting.
+    function toISODate(dateStr) {
+      const d = norm(dateStr);
+      if (!d) return "";
+      // already ISO?
+      if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
+
+      // German/European: DD.MM.YYYY or DD/MM/YYYY
+      let m = d.match(/^(\d{1,2})[.\/](\d{1,2})[.\/](\d{4})$/);
+      if (m) {
+        const dd = m[1].padStart(2,"0");
+        const mm = m[2].padStart(2,"0");
+        const yyyy = m[3];
+        return `${yyyy}-${mm}-${dd}`;
+      }
+
+      // Fallback: let Date.parse try (works for some formats, not all)
+      const t = Date.parse(d);
+      if (!Number.isNaN(t)) {
+        const dt = new Date(t);
+        const yyyy = dt.getFullYear();
+        const mm = String(dt.getMonth() + 1).padStart(2,"0");
+        const dd = String(dt.getDate()).padStart(2,"0");
+        return `${yyyy}-${mm}-${dd}`;
+      }
+
+      // If it’s an Excel serial number exported as a number, you can handle it here.
+      // (Leaving as-is because exports vary.)
+      return d;
+    }
+
+    function escapeHtml(s) {
+      return s.replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+              .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+    }
+
+    let entries = [];
+
+    function renderExerciseOptions() {
+      const ex = [...new Set(entries.map(e => e.Exercise))].sort((a,b) => a.localeCompare(b));
+      const sel = document.getElementById("exerciseSelect");
+      sel.innerHTML = `<option value="">Choose an exercise…</option>` +
+        ex.map(x => `<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join("");
+    }
+
+    function formatEntry(e) {
+      const note = [e.NoteA, e.NoteB].filter(Boolean).join(" · ");
+      const notePill = note ? ` <span class="pill">${escapeHtml(note)}</span>` : "";
+      return `
+        <div class="row">
+          <div class="big">${escapeHtml(e.DateISO || e.Date)} — ${escapeHtml(e.Weight_kg)} kg × ${escapeHtml(e.Reps)}${notePill}</div>
+          <div class="muted">${escapeHtml(e.Exercise)} · Workout: ${escapeHtml(e.WorkoutLabel)} · SetID: ${escapeHtml(e.SetID)}</div>
+        </div>
+      `;
+    }
+
+    function summarize(list) {
+      const s = document.getElementById("summary");
+      if (!list.length) { s.innerHTML = ""; return; }
+
+      const latest = list[0];
+      const best = list.reduce((acc, e) => {
+        const w = parseFloat(e.Weight_kg);
+        if (Number.isFinite(w) && w > acc.w) return { w, e };
+        return acc;
+      }, { w: -Infinity, e: null });
+
+      const latestLine = `${escapeHtml(latest.Exercise)} latest: <b>${escapeHtml(latest.Weight_kg)} kg × ${escapeHtml(latest.Reps)}</b> on ${escapeHtml(latest.DateISO || latest.Date)}`;
+      const bestLine = best.e ? `Heaviest logged: <b>${escapeHtml(String(best.w))} kg</b> on ${escapeHtml(best.e.DateISO || best.e.Date)}` : "";
+
+      s.innerHTML = `<div style="padding:10px; border:1px solid #ddd; border-radius:12px;">
+        <div>${latestLine}</div>
+        ${bestLine ? `<div class="muted" style="margin-top:6px;">${bestLine}</div>` : ""}
+      </div>`;
+    }
+
+    function applyFilter() {
+      const q = normKey(document.getElementById("q").value);
+      const chosen = norm(document.getElementById("exerciseSelect").value);
+
+      let list = entries;
+      if (chosen) {
+        list = list.filter(e => e.Exercise === chosen);
+      } else if (q) {
+        list = list.filter(e => normKey(e.Exercise).includes(q));
+      }
+
+      // Most recent first. Uses DateISO when available.
+      list = list.slice().sort((a,b) => (b.DateISO || b.Date || "").localeCompare(a.DateISO || a.Date || ""));
+
+      summarize(list);
+      document.getElementById("results").innerHTML =
+        list.slice(0, 40).map(formatEntry).join("") ||
+        `<div class="muted" style="margin-top:10px;">No matches.</div>`;
+    }
+
+    async function init() {
+      const res = await fetch("logs.csv", { cache: "no-store" });
+      const text = await res.text();
+      const rows = parseCSV(text);
+      if (!rows.length) throw new Error("CSV empty");
+
+      const header = rows[0].map(normKey);
+      const idx = (name) => header.indexOf(normKey(name));
+      const required = ["WorkoutID","Date","WorkoutLabel","SetID","Exercise","Weight_kg","Reps","NoteA","NoteB"];
+      for (const col of required) {
+        if (idx(col) === -1) throw new Error(`Missing column: ${col}`);
+      }
+
+      entries = rows.slice(1).map(r => ({
+        WorkoutID: norm(r[idx("WorkoutID")]),
+        Date: norm(r[idx("Date")]),
+        DateISO: toISODate(r[idx("Date")]),
+        WorkoutLabel: norm(r[idx("WorkoutLabel")]),
+        SetID: norm(r[idx("SetID")]),
+        Exercise: norm(r[idx("Exercise")]),
+        Weight_kg: norm(r[idx("Weight_kg")]),
+        Reps: norm(r[idx("Reps")]),
+        NoteA: norm(r[idx("NoteA")]),
+        NoteB: norm(r[idx("NoteB")]),
+      })).filter(e => e.Exercise);
+
+      renderExerciseOptions();
+      applyFilter();
+
+      document.getElementById("q").addEventListener("input", () => {
+        document.getElementById("exerciseSelect").value = "";
+        applyFilter();
+      });
+      document.getElementById("exerciseSelect").addEventListener("change", () => {
+        document.getElementById("q").value = "";
+        applyFilter();
+      });
+    }
+
+    init().catch(err => {
+      document.getElementById("results").innerHTML =
+        `<div class="muted">Failed to load logs.csv: ${escapeHtml(String(err))}</div>`;
+    });
+  </script>
+</body>
+</html>
