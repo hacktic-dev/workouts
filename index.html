@@ -74,6 +74,11 @@
       return Number.isFinite(n) ? n : NaN;
     }
 
+    function toIntOrNegInf(x) {
+      const n = toIntStrict(x);
+      return Number.isFinite(n) ? n : -Infinity;
+    }
+
     function parseDateLoose(dateStr) {
       const d = norm(dateStr);
       if (!d) return null;
@@ -123,7 +128,7 @@
 
       const sel = document.getElementById("noteASelect");
       sel.innerHTML =
-        `<option value="">Filter NoteA (any)…</option>` +
+        `<option value="">Filter type (any)…</option>` +
         values.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join("");
     }
 
@@ -136,7 +141,6 @@
         norm(e.Exercise),
         norm(e.WorkoutLabel),
         norm(e.SetID) ? `Set ${norm(e.SetID)}` : "",
-        norm(e.NoteB) ? `Note: ${norm(e.NoteB)}` : ""
       ].filter(Boolean);
 
       return `
@@ -186,23 +190,27 @@
       }
 
       list = list.slice().sort((a, b) => {
+        // 1) Date desc
         const dA = parseDateLoose(a.Date);
         const dB = parseDateLoose(b.Date);
         const tA = dA ? dA.getTime() : -Infinity;
         const tB = dB ? dB.getTime() : -Infinity;
-
         if (tA !== tB) return tB - tA;
-
-        const wA = toIntStrict(a.WorkoutID);
-        const wB = toIntStrict(b.WorkoutID);
+      
+        // 2) WorkoutID desc (session ordering within the day)
+        const wA = toIntOrNegInf(a.WorkoutID);
+        const wB = toIntOrNegInf(b.WorkoutID);
         if (wA !== wB) return wB - wA;
-
-        const sA = toIntStrict(a.SetID);
-        const sB = toIntStrict(b.SetID);
+      
+        // 3) SetID desc (higher sets first)
+        const sA = toIntOrNegInf(a.SetID);
+        const sB = toIntOrNegInf(b.SetID);
         if (sA !== sB) return sB - sA;
-
+      
+        // 4) Final stable-ish fallback
         return norm(b.Exercise).localeCompare(norm(a.Exercise));
-      });
+    });
+
 
       summarize(list);
 
