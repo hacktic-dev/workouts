@@ -24,7 +24,7 @@
   </select>
 
   <select id="noteASelect">
-    <option value="">Filter NoteA (any)…</option>
+    <option value="">Filter type…</option>
   </select>
 
   <div id="summary" style="margin: 12px 0;"></div>
@@ -127,17 +127,26 @@
         values.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join("");
     }
 
-    function formatEntry(e) {
+        function formatEntry(e) {
       const note = [norm(e.NoteA), norm(e.NoteB)].filter(Boolean).join(" · ");
       const notePill = note ? ` <span class="pill">${escapeHtml(note)}</span>` : "";
       const dateShown = formatDateDisplay(e.Date);
+
+      const metaParts = [
+        norm(e.Exercise),
+        norm(e.WorkoutLabel),
+        norm(e.SetID) ? `Set ${norm(e.SetID)}` : "",
+        norm(e.NoteB) ? `Note: ${norm(e.NoteB)}` : ""
+      ].filter(Boolean);
+
       return `
         <div class="row">
           <div class="big">${escapeHtml(dateShown)} — ${escapeHtml(e.Weight_kg)} kg × ${escapeHtml(e.Reps)}${notePill}</div>
-          <div class="muted">${escapeHtml(e.Exercise)} · ${escapeHtml(e.WorkoutLabel)}</div>
+          <div class="muted">${escapeHtml(metaParts.join(" · "))}</div>
         </div>
       `;
     }
+
 
     function summarize(list) {
       const s = document.getElementById("summary");
@@ -176,21 +185,23 @@
         list = list.filter(e => norm(e.NoteA) === chosenNoteA);
       }
 
-      // Correct ordering for your data:
-      // WorkoutID is the "session" order across days.
-      // SetID only matters *within* a WorkoutID, so we sort:
-      // 1) WorkoutID desc, 2) SetID desc.
       list = list.slice().sort((a, b) => {
+        const dA = parseDateLoose(a.Date);
+        const dB = parseDateLoose(b.Date);
+        const tA = dA ? dA.getTime() : -Infinity;
+        const tB = dB ? dB.getTime() : -Infinity;
+
+        if (tA !== tB) return tB - tA;
+
         const wA = toIntStrict(a.WorkoutID);
         const wB = toIntStrict(b.WorkoutID);
-        if (wA !== wB) return (wB - wA);
+        if (wA !== wB) return wB - wA;
 
         const sA = toIntStrict(a.SetID);
         const sB = toIntStrict(b.SetID);
-        if (sA !== sB) return (sB - sA);
+        if (sA !== sB) return sB - sA;
 
-        // Stable fallback so it never "looks random" when identical IDs exist
-        return (norm(b.Exercise)).localeCompare(norm(a.Exercise));
+        return norm(b.Exercise).localeCompare(norm(a.Exercise));
       });
 
       summarize(list);
