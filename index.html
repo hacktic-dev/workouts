@@ -15,15 +15,23 @@
 </head>
 <body>
   <h2 style="margin: 0 0 8px 0;">Lifting Log</h2>
-  <div class="muted">Loads <code>logs.csv</code> from this site. Your CSV headers must match your Excel export.</div>
+  <div class="muted">Loads <code>logs.csv</code> from this site.</div>
 
   <input id="q" placeholder="Search exercise (e.g. bench, squat, OHP)..." autocomplete="off" />
-  <select id="exerciseSelect"><option value="">Choose an exercise…</option></select>
+
+  <select id="exerciseSelect">
+    <option value="">Choose an exercise…</option>
+  </select>
+
+  <select id="noteASelect">
+    <option value="">Filter NoteA (any)…</option>
+  </select>
 
   <div id="summary" style="margin: 12px 0;"></div>
   <div id="results"></div>
 
   <script>
+    // Tiny CSV parser: handles commas, quotes, and newlines in quotes.
     function parseCSV(text) {
       const rows = [];
       let row = [], field = "", inQuotes = false;
@@ -51,58 +59,56 @@
     const norm = (s) => (s ?? "").toString().trim();
     const normKey = (s) => norm(s).toLowerCase();
 
-    // Turn lots of common Excel-style date strings into YYYY-MM-DD for reliable sorting.
-    function toISODate(dateStr) {
-      const d = norm(dateStr);
-      if (!d) return "";
-      // already ISO?
-      if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
-
-      // German/European: DD.MM.YYYY or DD/MM/YYYY
-      let m = d.match(/^(\d{1,2})[.\/](\d{1,2})[.\/](\d{4})$/);
-      if (m) {
-        const dd = m[1].padStart(2,"0");
-        const mm = m[2].padStart(2,"0");
-        const yyyy = m[3];
-        return `${yyyy}-${mm}-${dd}`;
-      }
-
-      // Fallback: let Date.parse try (works for some formats, not all)
-      const t = Date.parse(d);
-      if (!Number.isNaN(t)) {
-        const dt = new Date(t);
-        const yyyy = dt.getFullYear();
-        const mm = String(dt.getMonth() + 1).padStart(2,"0");
-        const dd = String(dt.getDate()).padStart(2,"0");
-        return `${yyyy}-${mm}-${dd}`;
-      }
-
-      // If it’s an Excel serial number exported as a number, you can handle it here.
-      // (Leaving as-is because exports vary.)
-      return d;
-    }
-
     function escapeHtml(s) {
-      return s.replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
-              .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+      return s
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
     }
 
     let entries = [];
 
     function renderExerciseOptions() {
-      const ex = [...new Set(entries.map(e => e.Exercise))].sort((a,b) => a.localeCompare(b));
+      const ex = [...new Set(entries.map(e => e.Exercise))]
+        .filter(Boolean)
+        .sort((a,b) => a.localeCompare(b));
+
       const sel = document.getElementById("exerciseSelect");
-      sel.innerHTML = `<option value="">Choose an exercise…</option>` +
+      sel.innerHTML =
+        `<option value="">Choose an exercise…</option>` +
         ex.map(x => `<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join("");
     }
 
+    function renderNoteAOptions() {
+      const values = [...new Set(entries.map(e => e.NoteA))]
+        .filter(v => v !== null && v !== undefined && norm(v) !== "")
+        .map(v => norm(v));
+
+      const sel = document.getElementById("noteASelect");
+      sel.innerHTML =
+        `<option value="">Filter NoteA (any)…</option>` +
+        values
+          .sort((a,b) => a.localeCompare(b))
+          .map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`)
+          .join("");
+    }
+
     function formatEntry(e) {
-      const note = [e.NoteA, e.NoteB].filter(Boolean).join(" · ");
+      const noteA = norm(e.NoteA);
+      const noteB = norm(e.NoteB);
+      const note = [noteA, noteB].filter(Boolean).join(" · ");
       const notePill = note ? ` <span class="pill">${escapeHtml(note)}</span>` : "";
       return `
         <div class="row">
-          <div class="big">${escapeHtml(e.DateISO || e.Date)} — ${escapeHtml(e.Weight_kg)} kg × ${escapeHtml(e.Reps)}${notePill}</div>
-          <div class="muted">${escapeHtml(e.Exercise)} · Workout: ${escapeHtml(e.WorkoutLabel)} · SetID: ${escapeHtml(e.SetID)}</div>
+          <div class="big">
+            ${escapeHtml(e.Date)} — ${escapeHtml(e.Weight_kg)} kg × ${escapeHtml(e.Reps)}
+            ${notePill}
+          </div>
+          <div class="muted">
+            ${escapeHtml(e.Exercise)} · Workout: ${escapeHtml(e.WorkoutLabel)} · WorkoutID: ${escapeHtml(e.WorkoutID)} · SetID: ${escapeHtml(e.SetID)}
+          </div>
         </div>
       `;
     }
@@ -118,8 +124,12 @@
         return acc;
       }, { w: -Infinity, e: null });
 
-      const latestLine = `${escapeHtml(latest.Exercise)} latest: <b>${escapeHtml(latest.Weight_kg)} kg × ${escapeHtml(latest.Reps)}</b> on ${escapeHtml(latest.DateISO || latest.Date)}`;
-      const bestLine = best.e ? `Heaviest logged: <b>${escapeHtml(String(best.w))} kg</b> on ${escapeHtml(best.e.DateISO || best.e.Date)}` : "";
+      const latestLine =
+        `${escapeHtml(latest.Exercise)} latest: <b>${escapeHtml(latest.Weight_kg)} kg × ${escapeHtml(latest.Reps)}</b> (WorkoutID ${escapeHtml(latest.WorkoutID)}, SetID ${escapeHtml(latest.SetID)})`;
+
+      const bestLine = best.e
+        ? `Heaviest logged: <b>${escapeHtml(String(best.w))} kg</b> (WorkoutID ${escapeHtml(best.e.WorkoutID)}, SetID ${escapeHtml(best.e.SetID)})`
+        : "";
 
       s.innerHTML = `<div style="padding:10px; border:1px solid #ddd; border-radius:12px;">
         <div>${latestLine}</div>
@@ -129,21 +139,36 @@
 
     function applyFilter() {
       const q = normKey(document.getElementById("q").value);
-      const chosen = norm(document.getElementById("exerciseSelect").value);
+      const chosenExercise = norm(document.getElementById("exerciseSelect").value);
+      const chosenNoteA = norm(document.getElementById("noteASelect").value);
 
       let list = entries;
-      if (chosen) {
-        list = list.filter(e => e.Exercise === chosen);
+
+      if (chosenExercise) {
+        list = list.filter(e => e.Exercise === chosenExercise);
       } else if (q) {
         list = list.filter(e => normKey(e.Exercise).includes(q));
       }
 
-      // Most recent first. Uses DateISO when available.
-      list = list.slice().sort((a,b) => (b.DateISO || b.Date || "").localeCompare(a.DateISO || a.Date || ""));
+      if (chosenNoteA) {
+        list = list.filter(e => norm(e.NoteA) === chosenNoteA);
+      }
+
+      // Sort newest -> oldest: WorkoutID desc, then SetID desc
+      list = list.slice().sort((a, b) => {
+        const wA = parseInt(a.WorkoutID, 10);
+        const wB = parseInt(b.WorkoutID, 10);
+        if (wA !== wB) return wB - wA;
+
+        const sA = parseInt(a.SetID, 10);
+        const sB = parseInt(b.SetID, 10);
+        return sB - sA;
+      });
 
       summarize(list);
+
       document.getElementById("results").innerHTML =
-        list.slice(0, 40).map(formatEntry).join("") ||
+        list.slice(0, 50).map(formatEntry).join("") ||
         `<div class="muted" style="margin-top:10px;">No matches.</div>`;
     }
 
@@ -155,6 +180,7 @@
 
       const header = rows[0].map(normKey);
       const idx = (name) => header.indexOf(normKey(name));
+
       const required = ["WorkoutID","Date","WorkoutLabel","SetID","Exercise","Weight_kg","Reps","NoteA","NoteB"];
       for (const col of required) {
         if (idx(col) === -1) throw new Error(`Missing column: ${col}`);
@@ -163,7 +189,6 @@
       entries = rows.slice(1).map(r => ({
         WorkoutID: norm(r[idx("WorkoutID")]),
         Date: norm(r[idx("Date")]),
-        DateISO: toISODate(r[idx("Date")]),
         WorkoutLabel: norm(r[idx("WorkoutLabel")]),
         SetID: norm(r[idx("SetID")]),
         Exercise: norm(r[idx("Exercise")]),
@@ -174,16 +199,20 @@
       })).filter(e => e.Exercise);
 
       renderExerciseOptions();
+      renderNoteAOptions();
       applyFilter();
 
       document.getElementById("q").addEventListener("input", () => {
         document.getElementById("exerciseSelect").value = "";
         applyFilter();
       });
+
       document.getElementById("exerciseSelect").addEventListener("change", () => {
         document.getElementById("q").value = "";
         applyFilter();
       });
+
+      document.getElementById("noteASelect").addEventListener("change", applyFilter);
     }
 
     init().catch(err => {
