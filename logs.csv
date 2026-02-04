@@ -192,8 +192,8 @@ W20251122,2025-11-22,,11,Overhead Press (Seated Barbell),35,7,Working,
 W20251122,2025-11-22,,12,Lat Pulldown (Standard Bar),55,11,Working,
 W20251122,2025-11-22,,13,Lat Pulldown (Standard Bar),65,6,Working,
 W20251122,2025-11-22,,14,Lat Pulldown (Standard Bar),65,9,Working,
-W20251122,2025-11-22,,15,Biceps Curl (Dumbell),22.5,14,Working,
-W20251122,2025-11-22,,16,Biceps Curl (Dumbell),22.5,8,Working,
+W20251122,2025-11-22,,15,Biceps Curl (Dumbbell),22.5,14,Working,
+W20251122,2025-11-22,,16,Biceps Curl (Dumbbell),22.5,8,Working,
 W20251122,2025-11-22,,17,Seated Row (Machine) – Wide Grip,45,7,Working,
 W20251122,2025-11-22,,18,Seated Row (Machine) – Wide Grip,45,8,Working,
 W20251122,2025-11-22,,19,Seated Row (Machine) – Wide Grip,45,9,Working,
@@ -352,9 +352,9 @@ W20251218,2025-12-18,Deload/Volume,3,Bench Press (Barbell),40,12,Warmup,
 W20251218,2025-12-18,Deload/Volume,4,Bench Press (Barbell),50,7,Working,
 W20251218,2025-12-18,Deload/Volume,5,Bench Press (Barbell),45,7,Working,
 W20251218,2025-12-18,Deload/Volume,6,Bench Press (Barbell),45,7,Working,"Reps unclear (""7/70"" interpreted as 7)"
-W20251218,2025-12-18,Deload/Volume,7,Overhead Press (Seated Dumbell),14,7,Working,
-W20251218,2025-12-18,Deload/Volume,8,Overhead Press (Seated Dumbell),12,9,Working,
-W20251218,2025-12-18,Deload/Volume,9,Overhead Press (Seated Dumbell),10,12,Working,
+W20251218,2025-12-18,Deload/Volume,7,Overhead Press (Seated Dumbbell),14,7,Working,
+W20251218,2025-12-18,Deload/Volume,8,Overhead Press (Seated Dumbbell),12,9,Working,
+W20251218,2025-12-18,Deload/Volume,9,Overhead Press (Seated Dumbbell),10,12,Working,
 W20251218,2025-12-18,Deload/Volume,10,Lat Pulldown (Standard Bar),40,12,Warmup,
 W20251218,2025-12-18,Deload/Volume,11,Lat Pulldown (Standard Bar),50,7,Working,
 W20251218,2025-12-18,Deload/Volume,12,Assisted Pull-Up,-10,8,Working,
@@ -600,9 +600,9 @@ W20260130,2026-01-30,B,12,Leg Press,157,6,Working,
 W20260126,2026-01-26,A,1,Chest-Supported Dumbbell Row,13.5,12,Working,
 W20260126,2026-01-26,A,2,Chest-Supported Dumbbell Row,13.5,11,Working,
 W20260126,2026-01-26,A,3,Chest-Supported Dumbbell Row,13.5,12,Working,
-W20260126,2026-01-26,A,4,Overhead Press (Seated Dumbell),13.5,12,Working,
-W20260126,2026-01-26,A,5,Overhead Press (Seated Dumbell),15.7,8,Working,
-W20260126,2026-01-26,A,6,Overhead Press (Seated Dumbell),15.7,8,Working,
+W20260126,2026-01-26,A,4,Overhead Press (Seated Dumbbell),13.5,12,Working,
+W20260126,2026-01-26,A,5,Overhead Press (Seated Dumbbell),15.7,8,Working,
+W20260126,2026-01-26,A,6,Overhead Press (Seated Dumbbell),15.7,8,Working,
 W20260126,2026-01-26,A,7,Bench Press (Barbell),20,10,Warmup,
 W20260126,2026-01-26,A,8,Bench Press (Barbell),40,5,Warmup,
 W20260126,2026-01-26,A,9,Bench Press (Barbell),50,3,Warmup,
@@ -636,16 +636,16 @@ W20260203,03/02/2026,A,5,Bench Press (Barbell),70,2,Working,
 W20260203,03/02/2026,A,6,Bench Press (Barbell),70,4,Working,
 W20260203,03/02/2026,A,7,Bench Press (Barbell),70,3,Working,
 W20260203,03/02/2026,A,8,Bench Press (Barbell),60,6,Backoff,
-W20260203,03/02/2026,A,9,Overhead Press (Seated Dumbell),35,8,Working,85 deg incline
-W20260203,03/02/2026,A,10,Overhead Press (Seated Dumbell),35,8,Working,85 deg incline
-W20260203,03/02/2026,A,11,Overhead Press (Seated Dumbell),35,8,Working,85 deg incline
+W20260203,03/02/2026,A,9,Overhead Press (Seated Dumbbell),35,8,Working,85 deg incline
+W20260203,03/02/2026,A,10,Overhead Press (Seated Dumbbell),35,8,Working,85 deg incline
+W20260203,03/02/2026,A,11,Overhead Press (Seated Dumbbell),35,8,Working,85 deg incline
 W20260203,03/02/2026,A,12,Chest-Supported Row (Machine),50,8,Working,
 W20260203,03/02/2026,A,13,Seated Row (Machine) – Narrow Grip,40,8,Working,
 W20260203,03/02/2026,A,14,Seated Row (Machine) – Narrow Grip,35,8,Working,
 W20260203,03/02/2026,A,15,Triceps Extension (Cable),20,10,Working,new
 W20260203,03/02/2026,A,16,Triceps Extension (Cable),17.5,8,Working,new
-W20260203,03/02/2026,A,17,Incline Dumbbell Hammer Curl,12,12,Working,75 deg incline
-W20260203,03/02/2026,A,18,Incline Dumbbell Hammer Curl,12,7,Working,75 deg incline
+W20260203,03/02/2026,A,17,Hammer Curl (Incline),12,12,Working,75 deg incline
+W20260203,03/02/2026,A,18,Hammer Curl (Incline),12,7,Working,75 deg incline
 W20260203,03/02/2026,A,19,Lateral Raise (Dumbbell),7,11,Working,
 W20260203,03/02/2026,A,20,Lateral Raise (Dumbbell),7,8,Working,
 W20260203,03/02/2026,A,21,Face Pull,20,5,Working,new / unsure
