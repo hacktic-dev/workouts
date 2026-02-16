@@ -1,4 +1,4 @@
-﻿about n,Date,WorkoutLabel,SetID,Exercise,Weight_kg,Reps,NoteA,NoteB
+﻿WorkoutID,Date,WorkoutLabel,SetID,Exercise,Weight_kg,Reps,NoteA,NoteB
 W20251003,03/10/2025,,1,Bench Press (Barbell),50,9,Working,
 W20251003,03/10/2025,,2,Bench Press (Barbell),50,10,Working,
 W20251003,03/10/2025,,3,Bench Press (Barbell),55,6,Working,
